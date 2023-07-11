@@ -1,0 +1,8 @@
+---
+- hosts: "{{ Target }}"
+  gather_facts: no
+  tasks:
+    - user:
+        name: "{{ Name }}"
+        password: "{{ Password | password_hash('sha512') }}"
+

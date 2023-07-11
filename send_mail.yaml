@@ -1,0 +1,107 @@
+---
+- name: send_inspection
+  hosts: Managed
+  gather_facts: no
+  become: yes
+  vars:
+    local_path: /${LOCAL}/${PATH}
+    remote_path: /${REMOTE}/${PATH}
+  tasks:
+# 1. CHECK DIR NAME 
+    - name: Check File Name
+      ignore_errors: yes
+      vars:
+        ansible_become: yes
+        ansible_user: root
+        ansible_pass: '{PW}'
+      shell:
+        cmd: |
+          date=`date +"%Y%m%d"`
+          echo $date
+      register: check_file_name
+    - name: debug check name
+      debug:
+        var: check_file_name
+
+
+# 2. MKDIR
+    - name: Create Directory
+      ignore_errors: yes
+      file:
+        path: /${MANAGED}/${PATH}/{{ check_file_name.stdout }}
+        state: directory
+      register: create_dir
+    - name: debug dir
+      debug:
+        var: create_dir
+
+
+
+# 3. Check Month
+    - name: Check Month
+      ignore_errors: yes
+      shell:
+        cmd: |
+          date +%m
+      register: check_month
+    - name: debug check month
+      debug:
+        var: check_month
+
+
+
+# 4. COPY
+    - name: Copy File To Managed Server
+      ignore_errors: yes
+      copy:
+        src: "{{ item }}"
+        dest: "{{ create_dir.path }}/"
+      with_fileglob:
+        - "{{ local_path }}/{{ check_file_name.stdout }}/*"
+      register: copy_file_to_managed_server
+    - name: debug copy files
+      debug:
+        var: copy_file_to_managed_server
+
+
+
+# 5. Archive
+    - name: Archive Inspection Files
+      ignore_errors: yes
+      archive:
+        path: "{{ remote_path }}/{{ check_file_name.stdout }}"
+        dest: "{{ remote_path }}/{{ check_file_name.stdout }}.tar"
+      register: archive_file_name
+    - name: debug archive
+      debug:
+        var: archive_file_name
+
+
+
+# 6. Send Mail
+    - name: Send Mail To Eonit
+      mail:
+        host: ${MAIL_SERVER_IP}
+        port: 25
+        to:
+        - ${SEND_USER}
+        subject: '[aaa] {{ check_month.stdout }}월 aaa'
+        body: '안녕하세요, aaaa입니다.
+
+
+        aaa
+
+        charset: utf-8
+        attach: 
+        - "{{ archive_file_name.dest }}"
+
+# 7. Delete .tar
+
+    - name: Recursively remove directory
+      file:
+        path: "{{ remote_path }}/{{ check_file_name.stdout }}"
+        state: absent
+      register: remove_dir
+    - name: debug remove dir
+      debug:
+        var: remove_dir

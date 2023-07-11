@@ -1,0 +1,28 @@
+---
+- name: rhel8_security
+  hosts: "{{  Target }}"
+  gather_facts: no
+  become: yes
+  vars:
+    local_path: /etc/ansible/playbooks/rhel8_security
+    remote_path: /root
+# 1. 점검 스크립트 복사 
+  tasks:
+    - name: Copy Script
+      ignore_errors: yes
+      copy:
+        src: "{{ local_path }}/rhel8.sh"
+        dest: "{{ remote_path }}"
+      register: copy_script
+
+# 2. 스크립트 수행
+    - name: Run Script
+      ignore_errors: yes
+      shell:
+        cmd: |
+          sh rhel8.sh
+      register: debug_script
+    - name: debug script
+      debug:
+        var: debug_script
+

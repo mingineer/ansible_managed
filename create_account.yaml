@@ -1,0 +1,31 @@
+---
+- name: Create Account and Group
+  hosts: "{{  Target }}"
+  gather_facts: no
+  become: yes
+  tasks:
+# 1. Create Group
+    - name: Create Group
+      vars:
+        ansible_become: yes
+        ansible_become_method: sudo
+        ansible_become_user: root
+      group:
+        name: "{{ Group }}"
+        gid: "{{ GID }}"
+        state: present
+
+# 2. Create Account
+    - name: Create Account
+      ignore_errors: yes
+      user:
+        name: "{{ Name }}"
+        uid: "{{ UID }}"
+        group: "{{ Group }}"
+        state: present
+        password: "{{ Password | password_hash('sha512') }}"
+      register: create_account
+    - name: debug script
+      debug:
+        var: create_account
+

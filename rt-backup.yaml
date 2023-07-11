@@ -1,0 +1,19 @@
+---
+- name: OPENSHIFT ROUTE BACKUP
+  hosts: "{{ Target }}"
+  gather_facts: no
+  become: yes
+  tasks:
+    - name: Run Script
+      ignore_errors: yes
+      vars:
+        ansible_become: yes
+        ansible_become_method: sudo
+        ansible_become_user: root
+      shell:
+        cmd: |
+          sh /${PATH}/${TO}/${BACKUPSCRIPT}/rt_backup.sh
+      register: debug_script
+    - name: debug script
+      debug:
+        var: debug_script

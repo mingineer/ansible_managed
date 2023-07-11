@@ -1,0 +1,67 @@
+---
+- name: tibero_inspection
+  hosts: "{{  Target }}"
+  gather_facts: no
+  become: yes
+  vars:
+    local_path: /${LOCAL}/${PATH}
+    remote_path: /${REMOTE}/${PATH}
+# 1. 점검 스크립트 수행
+  tasks:
+    - name: Run Script
+      ignore_errors: yes
+      vars:
+        ansible_become: yes
+        ansible_become_method: sudo
+        ansible_become_user: root
+      shell:
+        cmd: |
+          su - ${USER_ID} -c "cd {{ remote_path }}; sh {{ remote_path }}/inspection.sh"
+      register: debug_script
+      
+# 2. 스크립트 결과 파일 이름 변경
+    - name: Change File Name
+      ignore_errors: yes
+      shell:
+        cmd: |
+          A=`ls -ltr {{ remote_path }} | tail -1 |awk '{print $9}'`
+          TODAY=`date +"%Y%m%d"`
+          mv {{ remote_path }}/${A} {{ remote_path }}/${TODAY}_${A}
+          ls -ltr {{ remote_path}} | tail -1 | awk '{print $9}'
+      register: change_file_name
+    - name: debug Change File Name
+      debug:
+        var: change_file_name
+
+# 3. Local 디렉토리 생성
+    - name: Check Today
+      ignore_errors: yes
+      shell:
+        cmd: |
+          date +"%Y%m%d"
+      register: check_today
+    - name: debug check today
+      debug:
+        var: check_today
+    - name: createdir
+      ignore_errors: yes
+      file:
+        path: "{{ local_path }}/{{ check_today.stdout }}"
+        state: directory
+      register: dirc
+      delegate_to: localhost
+    - name: debug directory
+      debug:
+        var: dirc
+
+# 3. 스크립트 Ansible 서버로 Fetch
+    - name: Fetch_File
+      ignore_errors: yes
+      fetch:
+        src: "{{ remote_path }}/{{ change_file_name.stdout }}"
+        dest: "{{ local_path }}/{{ check_today.stdout }}/"
+        flat: yes
+      register: fetch_file 
+    - name: debug Fetch
+      debug:
+        var: fetch_file

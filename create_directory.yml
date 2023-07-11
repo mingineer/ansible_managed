@@ -1,0 +1,20 @@
+---
+- name: Create Directory
+  hosts: "{{  Target }}"
+  gather_facts: no
+  become: yes
+  tasks:
+# 1. Create Directory
+    - name: Create Dir
+      vars:
+        ansible_become: yes
+        ansible_become_method: sudo
+        ansible_become_user: root
+      file:
+        path: "{{ PATH_DIR }}"
+        owner: "{{ OWNER }}"
+        group: "{{ GROUP }}"
+        state: directory
+
+
+
